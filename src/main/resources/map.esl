@@ -1,0 +1,251 @@
+// map generator
+syntax json
+json -> object map
+map -> end
+map -> key(k) mapValue
+
+// databook specific
+json -> messages msg
+arrayTail -> dataObject map arrayTail
+arrayTail -> collection map arrayTail
+arrayTail -> attribute(s) value unit arrayTail
+value -> value(s)
+unit -> unit(s)
+map -> dataObject map
+map -> collection map
+map -> at loc map
+loc -> irods loc
+loc -> tripleStore loc
+loc -> end
+map -> label(l) map
+map -> uri(u) map
+json -> message map
+msg -> create map msg
+msg -> delete map msg
+msg -> modify map map msg
+msg -> union map map msg
+msg -> diff map map msg
+msg -> end
+map -> hasPart arrayTail map
+u : nat
+l : nat
+s : nat
+
+mapValue -> value(v) map
+mapValue -> array arrayTail map
+arrayTail -> end
+arrayTail -> object map arrayTail
+arrayTail -> elem(v) arrayTail
+k : nat
+v : nat
+
+static
+definition
+k : java.lang.String
+u : java.lang.String
+l : java.lang.String
+s : java.lang.String
+
+dynamic
+evaluate: java.lang.Object key: java.lang.String
+json -> object map {
+	java.util.Map m = (java.util.Map) evaluate(map, null);
+	return m;
+}
+
+map -> end {
+	return new java.util.HashMap();
+}
+map -> key(k) mapValue {
+	return evaluate(mapValue, k);
+}
+mapValue -> array arrayTail map {
+	java.util.Map m = (java.util.Map) evaluate(map, null);
+	Object l = evaluate(arrayTail, null);
+	m.put(key, l);
+	return m;
+}
+arrayTail -> end {
+	return new java.util.LinkedList();
+}
+arrayTail -> elem(v) arrayTail {
+	java.util.List l = (java.util.List) evaluate(arrayTail, null);
+	l.add(0, v);
+	return l; 
+}
+
+arrayTail -> object map arrayTail {
+	Object m = evaluate(map, null);
+	java.util.List l = (java.util.List) evaluate(arrayTail, null);
+	l.add(0, m);
+	return l;
+}
+
+mapValue -> value(v) map {
+	java.util.Map m = (java.util.HashMap) evaluate(map, null);
+	m.put(key, v);
+	return m;
+}
+
+msg -> end {
+	return new java.util.LinkedList();
+}
+json -> messages msg {
+	Object ms = evaluate(msg, null);
+	return 
+		Utils.prog().object()
+			.key("type").value("Messages")
+			.key("messages").value(ms)
+		.end().run();
+}
+arrayTail -> dataObject  map arrayTail {
+	java.util.List l = (java.util.List) evaluate(arrayTail, null);
+	java.util.Map m = (java.util.HashMap) evaluate(map, null);
+	m.put("type", "DataObject");
+	l.add(0, m);
+	return l;
+}
+arrayTail -> collection  map arrayTail {
+	java.util.List l = (java.util.List) evaluate(arrayTail, null);
+	java.util.Map m = (java.util.HashMap) evaluate(map, null);
+	m.put("type", "Collection");
+	l.add(0, m);
+	return l;
+
+}
+arrayTail -> attribute(s) value unit arrayTail {
+	java.util.List l = (java.util.List) evaluate(arrayTail, null);
+	Object v = evaluate(value, null);
+	Object u = evaluate(unit, null);
+	Object hm = 
+		Utils.prog().object()
+			.key("type").value("AVU")
+			.key("attribute").value(s)
+			.key("value").value(v)
+			.key("unit").value(u)
+		.end().run();
+	l.add(0, hm);
+	return l;
+}
+value -> value(s) {
+	return s;
+}
+unit -> unit(s) {
+	return s;
+}
+map -> dataObject map {
+	java.util.Map m = (java.util.HashMap) evaluate(map, null);
+	m.put("type", "DataObject");
+	return m;
+}
+map -> collection map {
+	java.util.Map m = (java.util.HashMap) evaluate(map, null);
+	m.put("type", "Collection");
+	return m;
+
+}
+map -> uri(u) map {
+	java.util.Map m = (java.util.HashMap) evaluate(map, null);
+	m.put("uri", u);
+	return m;
+}
+
+json -> message map {
+	java.util.Map m = (java.util.HashMap) evaluate(map, null);
+	m.put("type", "Message");
+	return m;
+
+}
+msg -> create map msg {
+	java.util.List l = (java.util.List) evaluate(msg, null);
+	Object o = evaluate(map, null);
+	Object hm = 
+		Utils.prog().message()
+			.key("operation").value("create")
+			.hasPart().elem(o).end()
+		.end().run();
+	l.add(0, hm);
+	return l;
+}
+msg -> delete map msg {
+	java.util.List l = (java.util.List) evaluate(msg, null);
+	Object o = evaluate(map, null);
+	Object hm = 
+		Utils.prog().message()
+			.key("operation").value("delete")
+			.hasPart().elem(o).end()
+		.end().run();
+	l.add(0, hm);
+	return l;
+
+}
+msg -> modify map map2 msg {
+	java.util.List l = (java.util.List) evaluate(msg, null);
+	Object o = evaluate(map, null);
+	Object o2 = evaluate(map2, null);
+	Object hm = 
+		Utils.prog().message()
+			.key("operation").value("modify")
+			.hasPart().elem(o).elem(o2).end()
+		.end().run();
+	l.add(0, hm);
+	return l;
+	
+}
+msg -> union map map2 msg {
+	java.util.List l = (java.util.List) evaluate(msg, null);
+	Object o = evaluate(map, null);
+	Object o2 = evaluate(map2, null);
+	Object hm = 
+		Utils.prog().message()
+			.key("operation").value("union")
+			.hasPart().elem(o).elem(o2).end()
+		.end().run();
+	l.add(0, hm);
+	return l;
+	
+}
+msg -> diff map map2 msg {
+	java.util.List l = (java.util.List) evaluate(msg, null);
+	Object o = evaluate(map, null);
+	Object o2 = evaluate(map2, null);
+	Object hm = 
+		Utils.prog().message()
+			.key("operation").value("diff")
+			.hasPart().elem(o).elem(o2).end()
+		.end().run();
+	l.add(0, hm);
+	return l;
+	
+}
+map -> hasPart arrayTail map {
+	java.util.Map m = (java.util.HashMap) evaluate(map, null);
+	Object l = evaluate(arrayTail, null);
+	m.put("hasPart", l);
+	return m;
+}
+map -> label(l) map {
+	java.util.Map m = (java.util.HashMap) evaluate(map, null);
+	m.put("label", l);
+	return m;
+}
+
+loc -> irods loc {
+	java.util.List l = (java.util.List) evaluate(loc, null);
+	l.add(0, "irods");
+	return l;
+}
+loc -> tripleStore loc {
+	java.util.List l = (java.util.List) evaluate(loc, null);
+	l.add(0, "tripleStore");
+	return l;
+}
+loc -> end {
+	return new java.util.LinkedList();
+}
+map -> at loc map {
+	java.util.Map m = (java.util.HashMap) evaluate(map, null);
+	java.util.List l = (java.util.List) evaluate(loc, null);
+	m.put("storageLocationRequest", l);
+	return m;
+}

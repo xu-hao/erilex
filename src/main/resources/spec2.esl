@@ -1,0 +1,76 @@
+syntax e
+e -> cons(c)
+e -> zero
+e -> succ e
+e -> true
+e -> false
+e -> if e then e else e
+e -> app e e
+e -> abs e
+n : var
+c : nat
+
+static
+type
+ty -> bool
+ty -> nat
+ty -> fun ty ty
+ty -> t : var
+ty -> s : var
+environment
+env -> E : var
+env -> emp
+env -> push env ty
+typing emp |- e : t
+
+E |- c : t
+----------
+E |- e -> cons(c) : t
+
+----------
+E |- e -> zero : nat
+
+E |- e : nat
+----------
+E |- e -> succ e : nat
+
+----------
+E |- e -> true : bool
+
+----------
+E |- e -> false : bool
+
+E |- e : bool
+E |- e : t
+E |- e : t
+----------
+E |- e -> if e then e else e : t
+
+E |- e : fun s t
+E |- e : s
+----------
+E |- e -> app e e : t
+
+dynamic
+evaluate: Object
+e -> cons(c) {
+    return c;
+}
+e -> zero {
+    return 0;
+}
+e -> succ e {
+    return (Integer)evaluate(e)+1;
+}
+e -> true {
+    return true;
+}
+e -> false {
+    return false;
+}
+e -> if e1 then e2 else e3 {
+    return evaluate(((Boolean)evaluate(e1))?e2:e3);
+}
+e -> app e1 e2 {
+    return ((fun)evaluate(e1)).app(evaluate(e2));
+}

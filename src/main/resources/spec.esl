@@ -1,0 +1,53 @@
+// a simple typed language: an EriLex example
+// written by Hao Xu
+// email: xuh at cs dot unc dot edu
+syntax e
+e -> zero
+e -> succ e
+e -> true
+e -> false
+e -> if e then e else e
+
+static
+type
+ty -> bool
+ty -> nat
+ty -> t : var
+typing e : t
+
+----------
+e -> zero : nat
+
+e : nat
+----------
+e -> succ e : nat
+
+----------
+e -> true : bool
+
+----------
+e -> false : bool
+
+e : bool
+e : t
+e : t
+----------
+e -> if e then e else e : t
+
+dynamic
+eval: Object
+e -> zero {
+    return 0;
+}
+e -> succ e {
+    return (Integer)eval(e)+1;
+}
+e -> true {
+    return true;
+}
+e -> false {
+    return false;
+}
+e -> if e1 then e2 else e3 {
+    return ((Boolean)eval(e1))?eval(e2):eval(e3);
+}

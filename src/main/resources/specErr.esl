@@ -1,0 +1,25 @@
+syntax p
+p -> expr(e)
+e -> Int(n)
+e -> add(e e)
+e -> sub(e e)
+n :: nat
+
+static
+definition
+n : Integer
+
+dynamic
+eval : Integer
+p -> expr(e) {
+    return eval(e);
+}
+e -> Int(n) {
+    return n;
+}
+e -> add(e1 e2) {
+    return eval(e1) + eval(e2);
+}
+e -> sub(e1 e2) {
+    return eval(e1) + eval(e2);
+}

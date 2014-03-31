@@ -1,0 +1,116 @@
+// simply typed lambda calculus: an EriLex example
+// written by Hao Xu
+// email: xuh at cs dot unc dot edu
+syntax e
+e -> cons(c)
+e -> zero
+e -> succ e
+e -> true
+e -> false
+e -> if e then e else e
+e -> var i
+e -> app e e
+e -> abs e
+i -> Z
+i -> S i
+c : nat
+
+static
+type
+ty -> bool
+ty -> nat
+ty -> fun ty ty : fun
+ty -> t : var
+ty -> v : var
+ty -> w : var
+environment
+env -> E : var
+env -> emp
+env -> push env ty
+typing emp |- e : t
+
+E |- c : t
+----------
+E |- e -> cons(c) : t
+
+----------
+E |- e -> zero : nat
+
+E |- e : nat
+----------
+E |- e -> succ e : nat
+
+----------
+E |- e -> true : bool
+
+----------
+E |- e -> false : bool
+
+E |- e : bool
+E |- e : t
+E |- e : t
+----------
+E |- e -> if e then e else e : t
+
+E |- i : t
+----------
+push E v |- i -> S i : t
+
+----------
+push E t |- i -> Z : t
+
+E |- e : fun v t
+E |- e : v
+----------
+E |- e -> app e e : t
+
+push E v |- e : w
+----------
+E |- e -> abs e : fun v w
+
+dynamic
+evaluate: Object s:java.util.Stack
+e -> cons(c) {
+    return c;
+}
+e -> zero {
+    return 0;
+}
+e -> succ e {
+    return (Integer)evaluate(e,s)+1;
+}
+e -> true {
+    return true;
+}
+e -> false {
+    return false;
+}
+e -> if e1 then e2 else e3 {
+    return evaluate(((Boolean)evaluate(e1,s))?e2:e3,s);
+}
+e -> app e1 e2 {
+    return ((fun)evaluate(e1,s)).app(evaluate(e2,s));
+}
+e -> abs e {
+    // this can be make more efficient using a linked list based solution
+    final java.util.Stack ns = new java.util.Stack();
+    ns.addAll(s);
+    return new fun() {
+        public Object app(Object x) {
+            ns.push(x);
+            return evaluate(e,ns);
+        }
+    };
+}
+e -> var i {
+    return evaluate(i,s);
+}
+i -> Z {
+    return s.peek();
+}
+i -> S i {
+    final java.util.Stack ns = new java.util.Stack();
+    ns.addAll(s);
+    ns.pop();
+    return evaluate(i,ns);
+}

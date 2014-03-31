@@ -1,0 +1,122 @@
+// sql that uses prepared statements: an EriLex example
+// written by Hao Xu
+// email: xuh at cs dot unc dot edu
+syntax e
+e -> use(conn) stmt
+stmt -> select(str) fromClause whereClause
+fromClause -> from(str)
+whereClause -> where relExp relTail
+relExp -> column(str) criterion
+relExp -> string(str) criterion
+relExp -> integer(i) criterion
+relExp -> start relExp relTail
+relTail -> end
+relTail -> or relExp relTail
+relTail -> and relExp relTail
+criterion -> eq exp
+criterion -> neq exp
+criterion -> gt exp
+criterion -> lt exp
+criterion -> ge exp
+criterion -> le exp
+exp -> column(str)
+exp -> string(str)
+exp -> integer(i)
+conn : nat
+str : nat
+i : nat
+
+static
+definition
+conn : java.sql.Connection
+str : String
+i : Integer
+
+dynamic eval
+eval: java.sql.Statement
+e -> use(conn) stmt {
+    return (java.sql.Statement)evaluate(eval_param, new java.util.ArrayList());
+}
+evaluate: Object vars: java.util.ArrayList<erilex.data.generic.Pair<String,Object>>
+e -> use(conn) stmt {
+    try {
+        String sql = (String)evaluate(stmt,vars);
+        java.sql.PreparedStatement pstmt = conn.prepareStatement(sql);
+        for(int i=0;i<vars.size();i++) {
+            erilex.data.generic.Pair<String, Object> var = vars.get(i);
+            if(var.fst.equals("string")) {
+                pstmt.setString(i+1, (String)var.snd);
+            } else if(var.fst.equals("int")) {
+                pstmt.setInt(i+1, (Integer)var.snd);
+            }
+        }
+        return pstmt;
+    } catch (Exception ex) {
+        return null;
+    }
+}
+stmt -> select(str) fromClause whereClause {
+    return "select "+str+" "+evaluate(fromClause,vars)+" "+evaluate(whereClause,vars);
+}
+fromClause -> from(str) {
+    return "from "+str;
+}
+whereClause -> where relExp relTail {
+    return "where ("+evaluate(relExp,vars)+" "+evaluate(relTail,vars);
+}
+relExp -> column(str) criterion {
+    return str+evaluate(criterion,vars);
+}
+relExp -> string(str) criterion {
+    erilex.data.generic.Pair pair = new erilex.data.generic.Pair("string", str);
+    vars.add(pair);
+    return "?"+evaluate(criterion,vars);
+}
+relExp -> integer(i) criterion {
+    erilex.data.generic.Pair pair = new erilex.data.generic.Pair("integer", i);
+    vars.add(pair);
+    return "?"+evaluate(criterion,vars);
+}
+relExp -> start relExp relTail {
+    return "("+evaluate(relExp,vars)+" "+evaluate(relTail,vars);
+}
+relTail -> end {
+    return ")";
+}
+relTail -> or relExp relTail {
+    return "or "+evaluate(relExp,vars)+evaluate(relTail,vars);
+}
+relTail -> and relExp relTail {
+    return "and "+evaluate(relExp,vars)+evaluate(relTail,vars);
+}
+criterion -> eq exp {
+    return "="+evaluate(exp,vars);
+}
+criterion -> neq exp {
+    return "<>"+evaluate(exp,vars);
+}
+criterion -> lt exp {
+    return "<"+evaluate(exp,vars);
+}
+criterion -> gt exp {
+    return ">"+evaluate(exp,vars);
+}
+criterion -> le exp {
+    return "<="+evaluate(exp,vars);
+}
+criterion -> ge exp {
+    return ">="+evaluate(exp,vars);
+}
+exp -> column(str) {
+    return str;
+}
+exp -> string(str) {
+    erilex.data.generic.Pair pair = new erilex.data.generic.Pair("string", str);
+    vars.add(pair);
+    return "?";
+}
+exp -> integer(i) {
+    erilex.data.generic.Pair pair = new erilex.data.generic.Pair("int", i);
+    vars.add(pair);
+    return "?";
+}

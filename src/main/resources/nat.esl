@@ -1,0 +1,25 @@
+syntax e
+e -> zero
+e -> succ e
+
+static
+type
+ty -> nat
+
+typing e : nat
+
+----------
+e -> zero : nat
+
+e : nat
+----------
+e -> succ e : nat
+
+dynamic
+evaluate: Integer
+e -> zero {
+    return 0;
+}
+e -> succ e {
+    return evaluate(e)+1;
+}

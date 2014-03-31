@@ -1,0 +1,60 @@
+// bnf: an EriLex example
+// Run this example with the following command line:
+// java -jar EriLex <dir> <package> erilex.* erilex.data.generic.* bnf.esl
+// It should work despite the error messages.
+// EDSL code requires EriLex.jar.
+// written by Hao Xu
+// email: xuh at cs dot unc dot edu
+syntax prod
+prod -> def(gra str) as exp etail
+exp -> t(str)
+exp -> nt(str)
+exp -> start exp etail
+etail -> optional etail
+etail -> seq exp etail
+etail -> or exp etail
+etail -> end
+str : nat
+gra: nat
+
+static
+definition
+str : String
+gra: erilex.Grammar
+
+dynamic
+evaluate: Triple<Production,Production,Production> prod: Triple<Production,Production,Production> g:Grammar
+prod -> def(gra str) as exp etail {
+    Triple<Production,Production,Production> p = evaluate(etail, new Triple(
+        evaluate(exp, null, gra).first, null, null), gra);
+    p.first.setName(str);
+    return p;
+}
+exp -> t(str) {
+    return new Triple(new Terminal(str, null, g), null, null);
+}
+exp -> nt(str) {
+    return new Triple(new NonTerminal(str, null, g), null, null);
+}
+exp -> start exp etail {
+    return evaluate(etail, evaluate(exp, null, g), g);
+}
+etail -> end {
+    Production seq = prod.second == null? prod.first : new Seq(prod.second, prod.first, null, g);
+    Production or = prod.third == null? seq : new Or(prod.third, seq, null, g);
+    return new Triple(or, null, null);
+}
+etail -> or exp etail {
+    Production seq = prod.second == null? prod.first : new Seq(prod.second, prod.first, null, g);
+    Production or = prod.third == null? seq : new Or(prod.third, seq, null, g);
+    return evaluate(etail, new Triple(evaluate(exp, new Triple(null,null,null),g).first, null, or), g);
+}
+etail -> seq exp etail {
+    Production seq = prod.second == null? prod.first : new Seq(prod.second, prod.first, null, g);
+    return evaluate(etail, new Triple(evaluate(exp, new Triple(null,null,null),g).first, seq, prod.third), g);
+}
+etail -> optional etail {
+    return evaluate(etail, new Triple(new Optional(prod.first, null, g), prod.second, prod.third), g);
+}
+
+

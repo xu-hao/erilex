@@ -1,0 +1,141 @@
+// generic OO graph query language
+// googql
+
+syntax query
+query -> use(db) actionHead
+actionHead -> node(uri) action
+action -> match(prop) matchTail
+matchTail -> with(val) action
+action -> follow(prop) action
+action -> back action
+action -> uri action  
+action -> time action  
+action -> string action  
+action -> number action  
+action -> integer action
+action -> sel action
+action -> end
+db : nat
+uri : nat
+val : nat
+prop : nat
+
+static
+definition
+db : databook.local.model.RDFServiceWrapper
+uri : java.net.URI
+val : java.lang.String
+prop : java.lang.String
+
+dynamic
+evaluate: java.lang.Object nodes: java.util.Stack<String> counter: java.lang.Integer selects: java.util.Map<String,Class>
+query -> use(db) actionHead {
+	java.util.Stack<String> st = new java.util.Stack<String>();
+	// use LinkedHashMap to preserve order here
+	java.util.Map<String, Class> sel = new java.util.LinkedHashMap<String, Class>(); 
+	String whereClause = (String) evaluate(actionHead, st, 0, sel);
+	String sparql = "SELECT " + 
+		org.apache.commons.lang.StringUtils.join(sel.keySet(), ",") + 
+		" WHERE { " + whereClause + " }";
+	java.io.InputStream is = null;
+	try {
+		is = db.sparqlSelectQuery(sparql,
+			databook.local.model.RDFServiceWrapper.ResultFormat.CSV);
+		org.skife.csv.CSVReader rd = new org.skife.csv.SimpleReader();
+		java.util.List<String[]> list = rd.parse(is);
+		return list;
+		/*Object r = list.get(0)[0];
+		if(ent.getValue().equals(java.net.URI.class)) {
+			r = new java.net.URI((String) r);
+		}
+		return r;*/
+	} catch (Exception e) {
+		org.apache.log4j.Logger.getLogger("googql").error("googql error", e);
+	} finally {
+		try {
+			if(is != null) {
+				is.close();
+			}
+		} catch (Exception e1) {
+			org.apache.log4j.Logger.getLogger("googql").error("googql error", e1);			
+		}
+	}			
+	return null;
+}
+
+actionHead -> node(uri) action {
+	nodes.push(databook.utils.ModelUtils.bracket(uri.toString()));
+	return evaluate(action, nodes, counter, selects);
+}
+
+action -> uri action {
+	if(nodes.peek().startsWith("<")) {
+		throw new RuntimeException("cannot select a constant!");
+	}
+	selects.put(nodes.peek(), java.net.URI.class);
+	return evaluate(action, nodes, counter, selects);
+}   // returns the uri of the nodes in the working set  
+
+action -> sel action {
+	if(nodes.peek().startsWith("<")) {
+		throw new RuntimeException("cannot select a constant!");
+	}
+	selects.put(nodes.peek(), java.lang.Object.class);
+	return evaluate(action, nodes, counter, selects);
+}   // returns the uri of the nodes in the working set  
+
+action -> time action {
+	if(nodes.peek().startsWith("<")) {
+		throw new RuntimeException("cannot select a constant!");
+	}
+	selects.put(nodes.peek(), java.util.Date.class);
+	return evaluate(action, nodes, counter, selects);
+}   // returns the uri of the unique node in the working set  
+action -> integer action {
+	if(nodes.peek().startsWith("<")) {
+		throw new RuntimeException("cannot select a constant!");
+	}
+	selects.put(nodes.peek(), java.lang.Integer.class);
+	return evaluate(action, nodes, counter, selects);
+}   // returns the uri of the unique node in the working set  
+action -> number action {
+	if(nodes.peek().startsWith("<")) {
+		throw new RuntimeException("cannot select a constant!");
+	}
+	selects.put(nodes.peek(), java.lang.Double.class);
+	return evaluate(action, nodes, counter, selects);
+}   // returns the uri of the unique node in the working set  
+action -> string action {
+	if(nodes.peek().startsWith("<")) {
+		throw new RuntimeException("cannot select a constant!");
+	}
+	selects.put(nodes.peek(), java.lang.String.class);
+	return evaluate(action, nodes, counter, selects);
+}   // returns the uri of the unique node in the working set  
+action -> end {
+	return "";
+}   // end  
+
+action -> match(prop) matchTail {
+	String current = nodes.peek();
+	String props = prop.equals("a") ? "a" : databook.utils.ModelUtils.bracket(prop);
+	return current+" "+props+" "+evaluate(matchTail, nodes, counter, selects);
+} // match value
+
+matchTail -> with(val) action {
+	return val+" .\n"+evaluate(action, nodes, counter, selects);
+}
+
+action -> follow(prop) action {
+	String current = nodes.peek();
+	String next = "?var"+counter;
+	nodes.push(next);
+	String props = prop.equals("a") ? "a" : databook.utils.ModelUtils.bracket(prop);
+	return current+" "+props+" "+next+" .\n"+evaluate(action, nodes, counter+1, selects);
+} // follow property
+
+action -> back action {
+	String current = nodes.pop();
+	return evaluate(action, nodes, counter, selects);
+} //  go back the previous nodes
+
