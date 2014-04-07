@@ -41,8 +41,8 @@ query -> use(db) actionHead {
 	try {
 		is = db.sparqlSelectQuery(sparql,
 			databook.local.model.RDFServiceWrapper.ResultFormat.CSV);
-		org.skife.csv.CSVReader rd = new org.skife.csv.SimpleReader();
-		java.util.List<String[]> list = rd.parse(is);
+		org.apache.commons.csv.CSVParser rd = new org.apache.commons.csv.CSVParser(new java.io.InputStreamReader(is));			
+		java.util.List<String[]> list = Arrays.asList(rd.getAllValues());			
 		return list;
 		/*Object r = list.get(0)[0];
 		if(ent.getValue().equals(java.net.URI.class)) {
@@ -50,14 +50,14 @@ query -> use(db) actionHead {
 		}
 		return r;*/
 	} catch (Exception e) {
-		org.apache.log4j.Logger.getLogger("googql").error("googql error", e);
+		org.apache.commons.logging.LogFactory.getLog("googql").error("googql error", e);			
 	} finally {
 		try {
 			if(is != null) {
 				is.close();
 			}
 		} catch (Exception e1) {
-			org.apache.log4j.Logger.getLogger("googql").error("googql error", e1);			
+			org.apache.commons.logging.LogFactory.getLog("googql").error("googql error", e1);						
 		}
 	}			
 	return null;
